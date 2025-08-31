@@ -51,7 +51,7 @@ def train_and_evaluate(X_train, X_test, y_train, y_test):
     return model, preds, rmse
 
 def main():
-    st.title("NSE Stock Next-Day Close Price Prediction")
+    st.title("model")
 
     with st.spinner("Loading all NSE stock symbols..."):
         symbols = load_all_nse_symbols()
@@ -80,3 +80,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
