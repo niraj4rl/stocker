@@ -71,8 +71,8 @@ def main():
                 X_train, X_test, y_train, y_test = prepare_features(data)
                 model, preds, rmse = train_and_evaluate(X_train, X_test, y_train, y_test)
 
-                st.success(f"Model trained! RMSE: {rmse:.4f}")
-                st.write("Sample predictions:", preds[:5])
+                st.success(f" RMSE: {rmse:.4f}")
+                st.write("next 5 day predictions:", preds[:5])
             else:
                 st.warning("No data found for this symbol.")
     else:
@@ -80,4 +80,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
