@@ -78,7 +78,7 @@ def predict_next_days(model, last_close, last_date, n_days=5):
 
 # -------------------- Main --------------------
 def main():
-    st.title("NSE Stock Close Price Prediction (Random Forest Regression)")
+    st.title("model")
 
     with st.spinner("Loading all NSE stock symbols..."):
         symbols = load_all_nse_symbols()
@@ -124,3 +124,4 @@ def main():
 
 if _name_ == "_main_":
     main()
+
