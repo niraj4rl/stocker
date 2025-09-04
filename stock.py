@@ -124,8 +124,9 @@ def main():
 
 if _name_ == "_main_":
     main()
-    print(akhil loda he)
+    
 
 
 print("Hell World")
+
 
