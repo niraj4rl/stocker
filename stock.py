@@ -63,7 +63,6 @@ def predict_next_days(model, last_close, last_date, n_days=5):
     value = last_close
     date = last_date
     for i in range(1, n_days + 1):
-        # FIX: reshape correctly for sklearn
         value = model.predict(np.array(value).reshape(1, -1))[0]
         date = date + timedelta(days=1)
 
@@ -78,7 +77,7 @@ def predict_next_days(model, last_close, last_date, n_days=5):
 
 # -------------------- Main --------------------
 def main():
-    st.title("NSE Stock Close Price Prediction (Random Forest Regression)")
+    st.title("MODEL")
 
     with st.spinner("Loading all NSE stock symbols..."):
         symbols = load_all_nse_symbols()
@@ -104,9 +103,6 @@ def main():
                 st.write(f"RMSE: {rmse:.4f}")
                 st.write(f"Prediction Accuracy (based on MAPE): {accuracy:.2f}%")
 
-                st.subheader("Sample predictions on test set:")
-                st.write(preds[:5])
-
                 last_close = data['Close'].iloc[-1]
                 last_date = data['Date'].iloc[-1]
                 if isinstance(last_date, str):
@@ -122,5 +118,5 @@ def main():
     else:
         st.error("Could not load any NSE symbols.")
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     main()
