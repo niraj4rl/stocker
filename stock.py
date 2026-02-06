@@ -9,9 +9,9 @@ import matplotlib.pyplot as plt
 from datetime import timedelta
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, AdaBoostRegressor
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.svm import SVR
-from sklearn.metrics import mean_squared_error, mean_absolute_percentage_error, f1_score, cohen_kappa_score
+from sklearn.metrics import mean_squared_error, mean_absolute_percentage_error
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.neural_network import MLPRegressor
@@ -66,18 +66,14 @@ def save_full_model_result(symbol, stock_index, model_name, metrics):
             query = """
             INSERT INTO model_results (
                 stock_symbol, stock_index, model_name,
-                rmse_1_week, rmse_1_month, rmse_1_year, rmse_5_year,
-                mape_1_week, mape_1_month, mape_1_year, mape_5_year,
-                f1_1_week, f1_1_month, f1_1_year, f1_5_years,
-                kappa_1_week, kappa_1_month, kappa_1_year, kappa_5_year
-            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);
+                rmse_1_week, rmse_1_month, rmse_1_year,
+                mape_1_week, mape_1_month, mape_1_year
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s);
             """
-            horizon_keys = ['1_week', '1_month', '1_year', '5_year']
+            horizon_keys = ['1_week', '1_month', '1_year']
             rmse_vals = [safe_float(metrics[h][0]) for h in horizon_keys]
             mape_vals = [safe_float(metrics[h][1]) for h in horizon_keys]
-            f1_vals = [safe_float(metrics[h][2]) for h in horizon_keys]
-            kappa_vals = [safe_float(metrics[h][3]) for h in horizon_keys]
-            params = [symbol, stock_index, model_name] + rmse_vals + mape_vals + f1_vals + kappa_vals
+            params = [symbol, stock_index, model_name] + rmse_vals + mape_vals
             cur.execute(query, params)
         conn.commit()
     except Exception as e:
@@ -85,18 +81,12 @@ def save_full_model_result(symbol, stock_index, model_name, metrics):
     finally:
         conn.close()
 
-def compute_metrics(y_true, y_pred):
+def compute_regression_metrics(y_true, y_pred):
     if len(y_true) < 2 or len(y_pred) < 2:
-        return np.nan, np.nan, np.nan, np.nan
+        return np.nan, np.nan
     rmse = np.sqrt(mean_squared_error(y_true, y_pred))
     mape = mean_absolute_percentage_error(y_true, y_pred)
-    y_true_dir = (np.diff(y_true) > 0).astype(int)
-    y_pred_dir = (np.diff(y_pred) > 0).astype(int)
-    if len(set(y_true_dir)) < 2 or len(set(y_pred_dir)) < 2:
-        return rmse, mape, np.nan, np.nan
-    f1 = f1_score(y_true_dir, y_pred_dir, zero_division=0)
-    kappa = cohen_kappa_score(y_true_dir, y_pred_dir)
-    return rmse, mape, f1, kappa
+    return rmse, mape
 
 def add_all_features(df):
     df['dayofweek'] = df['Date'].dt.dayofweek
@@ -188,11 +178,11 @@ def evaluate_on_test_horizons(model, X_test, y_test, horizons):
     for h, d in horizons.items():
         n = min(d, len(y_test))
         if n < 2:
-            metrics[h] = (np.nan, np.nan, np.nan, np.nan)
+            metrics[h] = (np.nan, np.nan)
             continue
         true_vals = y_test.values[-n:]
         pred_vals = y_pred_all[-n:]
-        metrics[h] = compute_metrics(true_vals, pred_vals)
+        metrics[h] = compute_regression_metrics(true_vals, pred_vals)
     return metrics
 
 def fetch_model_results(symbol):
@@ -202,9 +192,7 @@ def fetch_model_results(symbol):
     try:
         query = """SELECT model_name,
         rmse_1_week, rmse_1_month, rmse_1_year,
-        mape_1_week, mape_1_month, mape_1_year,
-        f1_1_week, f1_1_month, f1_1_year,
-        kappa_1_week, kappa_1_month, kappa_1_year
+        mape_1_week, mape_1_month, mape_1_year
         FROM model_results WHERE stock_symbol = %s;"""
         df = pd.read_sql(query, conn, params=(symbol,))
         return df
@@ -214,7 +202,6 @@ def fetch_model_results(symbol):
         conn.close()
 
 def get_best_models_per_horizon(df):
-    metrics = ['rmse']
     horizons = ['1_week', '1_month', '1_year']
     best_models = {}
     for h in horizons:
@@ -229,7 +216,7 @@ def get_best_models_per_horizon(df):
 
 def plot_metric_comparison(df, metric, best_models, bar_width=0.15):
     horizons = ['1_week', '1_month', '1_year']
-    colors = {'rmse':'#ff7f0e','mape':'#1f77b4','f1':'#2ca02c','kappa':'#d62728'}
+    colors = {'rmse':'#ff7f0e','mape':'#1f77b4'}
     base_color = colors.get(metric,'#1f77b4')
     model_names = df['model_name']
     indices = list(range(len(model_names)))
@@ -247,7 +234,7 @@ def plot_metric_comparison(df, metric, best_models, bar_width=0.15):
                             ha='center', va='bottom', fontsize=8)
     ax.set_xticks([r + bar_width*(len(horizons)-1)/2 for r in indices])
     ax.set_xticklabels(model_names, rotation=35, ha='right', fontsize=12)
-    title_suffix = " (Lower is Better)" if metric in ['rmse','mape'] else " (Higher is Better)"
+    title_suffix = " (Lower is Better)"
     ax.set_title(f"{metric.upper()} Metric Comparison Across Horizons{title_suffix}", fontsize=16)
     ax.set_ylabel('Score')
     ax.legend(title='Horizon')
@@ -257,8 +244,8 @@ def plot_metric_comparison(df, metric, best_models, bar_width=0.15):
     plt.close(fig)
 
 def main():
-    st.title("Stocker")
-    st.info("All model scores are saved in Postgres; frontend shows predictions only for best models per horizon. Metric comparison graphs are shown below.")
+    st.title("Stocker - Regression Only")
+    st.info("Regression models only. Scores saved: RMSE, MAPE for 1w/1m/1y. Best models by lowest RMSE.")
 
     all_symbols = load_all_nse_symbols()
     selected_symbol = st.selectbox("Select Stock Symbol", all_symbols)
@@ -287,6 +274,7 @@ def main():
     models = {
         "XGBoost": XGBRegressor(n_estimators=100, random_state=42, verbosity=0) if XGBRegressor is not None else None,
         "Random Forest": RandomForestRegressor(n_estimators=100, random_state=42),
+        "Ridge Regression": Ridge(alpha=1.0, random_state=42),
         "Linear Regression": LinearRegression(),
         "AdaBoost": AdaBoostRegressor(n_estimators=100, random_state=42),
         "SVM": SVR(kernel='rbf'),
@@ -296,7 +284,7 @@ def main():
     }
     models = {k: v for k, v in models.items() if v is not None}
 
-    horizons = {'1_week': 5, '1_month': 22, '1_year': 252, '5_year': 1260}
+    horizons = {'1_week': 5, '1_month': 22, '1_year': 252}  # Removed 5_year
     progress = st.progress(0)
     for i, (name, mdl) in enumerate(models.items()):
         try:
@@ -308,7 +296,7 @@ def main():
             st.error(f"Training failed for {name}: {e}")
         progress.progress((i + 1) / len(models))
 
-    st.success("Model training complete and metrics saved to database.")
+    st.success("Regression model training complete. Metrics saved to database (1w/1m/1y only).")
 
     model_scores_df = fetch_model_results(selected_symbol)
     if model_scores_df.empty:
@@ -317,12 +305,12 @@ def main():
 
     best_models = get_best_models_per_horizon(model_scores_df)
 
-    st.subheader("Detailed Model Performance Comparison")
-    with st.expander("Show Metric Comparison"):
-        for metric in ['rmse', 'mape', 'f1', 'kappa']:
+    st.subheader("Model Performance Comparison (Regression)")
+    with st.expander("Show Metric Comparison Charts"):
+        for metric in ['rmse', 'mape']:
             plot_metric_comparison(model_scores_df, metric, best_models)
 
-    st.subheader("Best Model Predictions by Horizon")
+    st.subheader("Best Model Predictions by Horizon (Regression)")
 
     hist_data = data[['Date', 'Close']].iloc[-50:].copy()
     hist_data = add_all_features(hist_data)
