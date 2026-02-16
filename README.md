@@ -1,6 +1,6 @@
 # Stocker – NSE Stock Price Prediction
 
-**June 2025 - Ongoing (Final Year Project, Team of 4)**  
+**June 2025 - Ongoing (Final Year Project)**  
 End-to-end Streamlit web app for NSE stock forecasting - currently under active development with multiple ML models, PostgreSQL metrics storage, and horizon-optimized predictions spanning 1-week to 5-year horizons using RMSE, MAPE, F1, and Cohen's Kappa evaluation.
 
 ## Problem Statement
@@ -60,4 +60,4 @@ PostgreSQL stores comprehensive `model_results` table capturing:
 - Pandas `read_sql()` queries generate instant leaderboards
 Enables cross-session performance comparison and model evolution tracking.
 
-**Current Status**: Active development by team of 4 - targeting LSTM integration, backtesting framework, hyperparameter optimization, and IEEE publication by project completion Q2 2026.
+**Current Status**: Active development by team of 4 - targeting LSTM integration, backtesting framework, hyperparameter optimization, and paper publication by project completion.
