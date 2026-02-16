@@ -41,7 +41,6 @@ XGBoost gracefully falls back if unavailable. Models fit chronologically ordered
 - 1-week: last 5 trading days (momentum dominant)
 - 1-month: last 22 days (trend persistence)
 - 1-year: last 252 days (mean reversion begins)
-- 5-year: last 1260 days (random walk territory)
 Metrics computed per window reveal characteristic degradation patterns across horizons.
 
 ## Model Selection Methodology
