@@ -262,7 +262,7 @@ def main():
         st.warning("No stock data fetched.")
         return
 
-    st.subheader(f"Latest data for {selected_symbol}")
+    st.subheader(f"Latesttt data for {selected_symbol}")
     st.dataframe(data.tail(10))
 
     if len(data) < 100:
@@ -331,3 +331,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
